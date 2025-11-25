@@ -18,13 +18,45 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
     """
     引数:こうかとんRectまたは爆弾Rect
     戻り値：判定効果タブル（横方向, 縦方向）
-    画面内ならTrue, 画面外ならFalse"""
+    画面内ならTrue, 画面外ならFalse
+    """
     yoko, tate = True, True
     if rct.left < 0 or WIDTH < rct.right:  # 横方向のはみ出しチェック
         yoko = False
     if rct.top < 0 or HEIGHT < rct.bottom:  # 縦方向のはみ出しチェック
         tate = False
     return yoko, tate
+
+def game_over(screen: pg.Surface, bg_img: pg.Surface) -> None:
+    # 背景
+    screen.blit(bg_img, (0, 0))
+
+    # 半透明の黒で暗くする
+    screen.fill((0, 0, 0))
+   
+
+    # 泣きこうかとん
+    cry_L = pg.transform.rotozoom(pg.image.load("fig/8.png"), 0, 0.9)
+    cry_R = pg.transform.flip(cry_L, True, False)
+
+    # Game Over
+    font = pg.font.Font(None, 100)
+    text = font.render("Game Over", True, (255, 255, 255))
+    text_rct = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+
+    margin = 40
+    left_rct = cry_L.get_rect()
+    right_rct = cry_R.get_rect()
+    left_rct.centery = right_rct.centery = text_rct.centery
+    left_rct.centerx = text_rct.left - margin
+    right_rct.centerx = text_rct.right + margin
+
+    screen.blit(cry_L, left_rct)
+    screen.blit(cry_R, right_rct)
+    screen.blit(text, text_rct)
+    pg.display.update()
+    pg.time.wait(5000)
+
 
 def main():
     pg.display.set_caption("逃げろ！こうかとん")
@@ -47,7 +79,7 @@ def main():
                 return
             
         if kk_rct.colliderect(bb_rct):  # こうかとんと爆弾が衝突したら
-            print("ゲームオーバー")
+            game_over(screen, bg_img)
             return 
         screen.blit(bg_img, [0, 0]) 
 
