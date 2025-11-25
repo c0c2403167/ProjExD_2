@@ -27,6 +27,21 @@ def check_bound(rct: pg.Rect) -> tuple[bool, bool]:
         tate = False
     return yoko, tate
 
+
+def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
+    """
+    時間とともに爆弾が拡大・加速するための
+    爆弾Surfaceのリストと加速度のリストを作成して返す関数.
+    """
+    bb_imgs: list[pg.Surface] = []
+    for r in range(1, 11):  # 1〜10段階
+        bb_img = pg.Surface((20*r, 20*r))
+        pg.draw.circle(bb_img, (255, 0, 0), (10*r, 10*r), 10*r)
+        bb_img.set_colorkey((0, 0, 0))
+        bb_imgs.append(bb_img)
+    bb_accs: list[int] = [a for a in range(1, 11)]
+    return bb_imgs, bb_accs
+
 def game_over(screen: pg.Surface, bg_img: pg.Surface) -> None:
     # 背景
     screen.blit(bg_img, (0, 0))
@@ -70,6 +85,11 @@ def main():
     bb_img.set_colorkey((0, 0, 0))  # 黒色を透明に設定
     bb_rct = bb_img.get_rect()
     bb_rct.center = random.randint(0, WIDTH), random.randint(0, HEIGHT)  # 爆弾の初期位置
+
+    bb_imgs, bb_accs = init_bb_imgs()      # 段階ごとの爆弾と加速度リストを取得
+    bb_img = bb_imgs[0]                    # 最初は一番小さい爆弾を使う
+    bb_rct = bb_img.get_rect(center=bb_rct.center)  # 中心はさっき決めた位置のまま
+    
     vx, vy = +5, +5  # 爆弾の速度(横, 縦)
     clock = pg.time.Clock()
     tmr = 0
@@ -100,14 +120,41 @@ def main():
         kk_rct.move_ip(sum_mv)
         if check_bound(kk_rct) != (True, True):  # 画面外なら
             kk_rct.move_ip(-sum_mv[0], -sum_mv[1])  #移動を無かったことにする
+            
         screen.blit(kk_img, kk_rct)
+
+        # 時間とともに爆弾が拡大・加速する
+        idx = min(tmr // 500, 1)  # 500フレームごとに1段階アップ
+
+        # 爆弾画像を段階に応じて切り替える
+        old_center = bb_rct.center         # 位置は維持したいので一旦保存
+        bb_img = bb_imgs[idx]
+        bb_rct = bb_img.get_rect()         # 新しいサイズのRectを作り直す
+        bb_rct.center = old_center
+
+        # 加速度付きの速度を計算
+        avx = vx * bb_accs[idx]
+        avy = vy * bb_accs[idx]
+
+        # 画面端チェック（向きの反転は基準速度vx,vyに対して行う）
         yoko, tate = check_bound(bb_rct)
         if not yoko:
-            vx *= -1  # 縦方向にはみ出ていたら
+            vx *= -1
         if not tate:
-            vy *= -1  # 横方向にはみ出ていたら
-        bb_rct.move_ip(vx, vy)
+            vy *= -1
+
+        # 反転したかもしれないので、もう一度加速度をかける
+        avx = vx * bb_accs[idx]
+        avy = vy * bb_accs[idx]
+
+        # 加速された速度で移動
+        bb_rct.move_ip(avx, avy)
+
+        # 爆弾を描画
         screen.blit(bb_img, bb_rct)
+        # ==== ここまで演習2の処理 ====
+
+
         pg.display.update()
         tmr += 1
         clock.tick(50)
