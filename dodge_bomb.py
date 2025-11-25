@@ -44,7 +44,11 @@ def init_bb_imgs() -> tuple[list[pg.Surface], list[int]]:
     return bb_imgs, bb_accs
 
 
-def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]:
+def get_kk_imgs() -> dict[tuple[int, int], pg.Surface]: 
+    """
+    こうかとんの向きごとの画像をまとめた辞書を作って返す関数.
+    キーは移動量(dx, dy)、値はその向きのこうかとん画像Surface。
+    """
     base = pg.image.load("fig/3.png")          # 左向き
     base = pg.transform.rotozoom(base, 0, 0.9)
     right = pg.transform.flip(base, True, False)
